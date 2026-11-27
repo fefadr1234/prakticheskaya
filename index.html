@@ -1,1 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataFlow Payroll - Расчет заработной платы</title>
+    <link rel="stylesheet" href="style.css">
+    
+   
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+         
+            const theme = savedTheme || (systemDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
 
+
+            const savedAccent = localStorage.getItem('accentColor');
+            if (savedAccent) {
+                document.documentElement.style.setProperty('--accent-color', savedAccent);
+            }
+        })();
+    </script>
+</head>
+<body>
+   
+    <a href="#main-content" class="skip-link">Перейти к основному контенту</a>
+
+ 
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <div class="app-layout">
+      
+        <aside class="sidebar" id="sidebar">
+            <h2>DataFlow Payroll</h2>
+            <p class="sidebar-subtitle">Отдел кадров</p>
+            <nav class="sidebar-nav" aria-label="Основная навигация">
+                <ul>
+                    <li><a href="#" class="nav-link active">Сотрудники</a></li>
+                    <li><a href="#" class="nav-link">Отчеты</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content" id="main-content">
+          
+            <header class="mobile-header">
+                <button class="menu-toggle" id="menu-toggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="sidebar">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </button>
+                <span class="mobile-logo">DataFlow</span>
+            </header>
+
+            <div class="content-wrapper">
+                <header class="top-header">
+                    <h1>Расчетная ведомость</h1>
+                    
+                   
+                    <div class="theme-controls">
+                        <label for="accent-picker" class="a11y-label">Акцентный цвет:</label>
+                        <input type="color" id="accent-picker" class="color-picker" value="#0d6efd" aria-label="Выбрать акцентный цвет">
+                        
+                        <label for="theme-select" class="a11y-label">Тема:</label>
+                        <select id="theme-select" class="theme-select" aria-label="Выбрать тему оформления">
+                            <option value="light">Светлая</option>
+                            <option value="dark">Темная</option>
+                            <option value="high-contrast">Контрастная</option>
+                        </select>
+                    </div>
+                </header>
+
+              
+                <div class="filters-accordion">
+                    <button class="accordion-trigger" id="accordion-trigger" aria-expanded="false" aria-controls="filters-content">
+                        Фильтры и поиск
+                        <span class="accordion-icon">▼</span>
+                    </button>
+                    
+
+                    <section class="filters-panel" id="filters-content" aria-hidden="true">
+                        <div class="filter-group">
+                            <label for="search">Поиск по ФИО</label>
+                            <input type="text" id="search" placeholder="Введите имя...">
+                        </div>
+                        <div class="filter-group">
+                            <label for="status-filter">Статус</label>
+                            <select id="status-filter">
+                                <option value="all">Все</option>
+                                <option value="Выплачено">Выплачено</option>
+                                <option value="В ожидании">В ожидании</option>
+                            </select>
+                        </div>
+                        <div class="filter-group custom-checkboxes">
+                            <span class="filter-label">Департамент</span>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="dept-it" value="IT">
+                                <label for="dept-it">IT</label>
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="dept-hr" value="HR">
+                                <label for="dept-hr">HR</label>
+                            </div>
+                        </div>
+                        <div class="filter-group custom-radios">
+                            <span class="filter-label">Вид</span>
+                            <div class="radio-row">
+                                <input type="radio" id="view-table" name="view" value="table" checked>
+                                <label for="view-table">Таблица</label>
+                            </div>
+                            <div class="radio-row">
+                                <input type="radio" id="view-cards" name="view" value="cards">
+                                <label for="view-cards">Карточки</label>
+                            </div>
+                        </div>
+                        <div class="filter-group btn-group">
+                            <button class="btn btn-primary" id="reset-btn">Сбросить</button>
+                            <button class="btn btn-accent" id="add-employee-btn">+ Добавить</button>
+                        </div>
+                    </section>
+                </div>
+
+      
+                <section id="table-container" class="view-container active">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID <span class="sort-icon" aria-hidden="true">↕</span></th>
+                                    <th>ФИО Сотрудника</th>
+                                    <th>Должность</th>
+                                    <th>Статус</th>
+                                    <th>К выплате</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payroll-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+
+                <section id="cards-container" class="view-container"></section>
+            </div>
+        </main>
+    </div>
+
+  
+    <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="modal-title">Детали</h2>
+                <button class="modal-close-btn" id="modal-close-btn" aria-label="Закрыть окно">&times;</button>
+            </header>
+            <div class="modal-body" id="modal-body"></div>
+            <footer class="modal-footer" id="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel">Закрыть</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="render.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
